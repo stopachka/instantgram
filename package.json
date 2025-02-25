@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@instantdb/admin": "0.17.22",
     "@instantdb/react": "0.17.22",
     "nanoid": "^5.1.2",
