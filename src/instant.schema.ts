@@ -14,7 +14,12 @@ const _schema = i.schema({
       fullName: i.string(),
     }),
   },
-  links: {},
+  links: {
+    profileOwner: {
+      forward: { on: "profiles", has: "one", label: "owner" },
+      reverse: { on: "$users", has: "one", label: "profile" },
+    },
+  },
   rooms: {},
 });
 

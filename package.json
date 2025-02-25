@@ -11,6 +11,7 @@
   "dependencies": {
     "@instantdb/admin": "0.17.22",
     "@instantdb/react": "0.17.22",
+    "nanoid": "^5.1.2",
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
