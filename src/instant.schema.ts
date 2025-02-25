@@ -28,6 +28,19 @@ const _schema = i.schema({
         label: "profile",
       },
     },
+    profilePhoto: {
+      forward: {
+        on: "profiles",
+        has: "one",
+        label: "photo",
+      },
+      reverse: {
+        on: "$files",
+        has: "one",
+        label: "profile",
+        onDelete: "cascade",
+      },
+    },
   },
 });
 
