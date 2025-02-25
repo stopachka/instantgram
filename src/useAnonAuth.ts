@@ -36,7 +36,7 @@ export default function useAnonAuth(): AnonState {
         () => ({ isLoading: false as const, error: undefined }),
         (error) => ({
           isLoading: false as const,
-          error: { message: error?.message as string },
+          error: { message: error?.message || "Unknown error" },
         })
       )
       .then((state: InitState) => {
@@ -63,5 +63,8 @@ export default function useAnonAuth(): AnonState {
 async function createAnonUser(): Promise<{ refresh_token: string }> {
   const res = await fetch("/api/create-user", { method: "POST" });
   const json = await res.json();
+  if (!res.ok) {
+    return Promise.reject(json);
+  }
   return json;
 }
