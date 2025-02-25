@@ -28,9 +28,9 @@ export default function App() {
   const profile = profiles[0];
   if (!profile) return <NotFound />;
   return (
-    <div className="max-w-prose mx-auto p-4 space-y-4">
+    <div className="max-w-prose mx-auto p-4 space-y-4 relative">
       {/* Company Header */}
-      <div className="border-b flex justify-between py-2">
+      <div className="border-b flex justify-between py-2 sticky top-0 bg-white">
         <img src="/img/text-logo.svg" />
         <button className="bg-black rounded-xl w-10 h-10 flex items-center justify-center">
           <PlusIcon className="w-8 h-8 text-white" />
@@ -38,10 +38,12 @@ export default function App() {
       </div>
       {/* Profile Header */}
       <div className="flex items-center space-x-4">
-        <div className="w-32 h-32 rounded-full bg-gray-600"></div>
-        <div className="space-y-1">
-          <h3 className="text-2xl">{profile.fullName}</h3>
-          <h2 className="font-bold text-gray-500 text-sm">@{profile.handle}</h2>
+        <div className="w-32 h-32 min-w-32 rounded-full bg-gray-600"></div>
+        <div className="space-y-1 overflow-hidden">
+          <h3 className="text-2xl truncate">{profile.fullName}</h3>
+          <h2 className="font-bold text-gray-500 text-sm truncate">
+            @{profile.handle}
+          </h2>
         </div>
       </div>
       {/* Posts Feed */}
