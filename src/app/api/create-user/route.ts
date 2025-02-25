@@ -1,7 +1,3 @@
-import prettyID from "@/prettyId";
-import serverDB from "@/serverDB";
-import { id } from "@instantdb/admin";
-
 /**
  * This is a handy endpoint to create an anonymous user.
  *
@@ -12,6 +8,11 @@ import { id } from "@instantdb/admin";
  *
  * Check out http://instantdb.com/docs/auth to learn more
  */
+
+import prettyID from "@/prettyId";
+import serverDB from "@/serverDB";
+import { id } from "@instantdb/admin";
+
 export async function POST() {
   const randEmail = `anon-${id()}@instantdb.com`;
   const token = await serverDB.auth.createToken(randEmail);
@@ -25,5 +26,5 @@ export async function POST() {
       .link({ owner: user.id })
   );
 
-  return { user };
+  return Response.json({ user });
 }
