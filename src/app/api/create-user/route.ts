@@ -9,7 +9,7 @@
  * Check out http://instantdb.com/docs/auth to learn more
  */
 
-import prettyID from "@/prettyId";
+import prettyID from "@/prettyID";
 import serverDB from "@/serverDB";
 import { id } from "@instantdb/admin";
 

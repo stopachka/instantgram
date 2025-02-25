@@ -33,14 +33,18 @@ export default function useAnonAuth(): AnonState {
     let isMounted = true;
     initPromise
       .then(
-        () => ({ isLoading: false }),
-        (err) => err
+        () => ({ isLoading: false as const, error: undefined }),
+        (error) => ({
+          isLoading: false as const,
+          error: { message: error?.message as string },
+        })
       )
-      .then((state) => {
+      .then((state: InitState) => {
         if (isMounted) {
           setInitState(state);
         }
       });
+
     return () => {
       isMounted = false;
     };
