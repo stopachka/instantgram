@@ -4,7 +4,7 @@ import clientDB from "@/clientDB";
 import useAnonAuth from "@/useAnonAuth";
 import { HeartIcon } from "@heroicons/react/24/outline";
 import { PlusIcon } from "@heroicons/react/24/solid";
-import React from "react";
+import React, { useRef, useState } from "react";
 
 export default function App() {
   const auth = useAnonAuth();
@@ -15,6 +15,7 @@ export default function App() {
             $: {
               where: { owner: auth.user.id },
             },
+            photo: {},
           },
         }
       : null
@@ -38,7 +39,35 @@ export default function App() {
       </div>
       {/* Profile Header */}
       <div className="flex items-center space-x-4">
-        <div className="w-32 h-32 min-w-32 rounded-full bg-gray-600"></div>
+        <FileButton
+          render={(isLoading) => {
+            return (
+              <div className={isLoading ? "opacity-50" : ""}>
+                <div className="max-w-32 h-32 min-w-32 rounded-full">
+                  {profile.photo ? (
+                    <img
+                      src={profile.photo.url}
+                      className="object-cover h-full w-full rounded-full"
+                    />
+                  ) : (
+                    <div className="bg-gray-200 h-full w-full"></div>
+                  )}
+                </div>
+              </div>
+            );
+          }}
+          upload={async (file: File) => {
+            const ret = await clientDB.storage.uploadFile(
+              `/photos/${auth.user.id}/${file.name}`,
+              file
+            );
+            await clientDB.transact(
+              clientDB.tx.profiles[profile.id].link({
+                photo: ret.data.id,
+              })
+            );
+          }}
+        />
         <div className="space-y-1 overflow-hidden">
           <h3 className="text-2xl truncate">{profile.fullName}</h3>
           <h2 className="font-bold text-gray-500 text-sm truncate">
@@ -72,6 +101,44 @@ export default function App() {
           </a>
         </p>
       </div>
+    </div>
+  );
+}
+
+function FileButton({
+  render,
+  upload,
+}: {
+  render: (isLoading: boolean) => React.ReactNode;
+  upload: (file: File) => Promise<void>;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  return (
+    <div>
+      <button
+        onClick={() => {
+          inputRef.current!.click();
+        }}
+      >
+        {render(isLoading)}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setIsLoading(true);
+          try {
+            await upload(file);
+          } finally {
+            setIsLoading(false);
+          }
+        }}
+      />
     </div>
   );
 }
