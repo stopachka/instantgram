@@ -9,8 +9,8 @@ import { useEffect, useState } from "react";
 
 const initPromise = clientDB.getAuth().then(async (user) => {
   if (user) return user;
-  const { refresh_token } = await createAnonUser();
-  return clientDB.auth.signInWithToken(refresh_token);
+  const token = await createAnonUser();
+  return clientDB.auth.signInWithToken(token);
 });
 
 type AnonState =
@@ -36,7 +36,7 @@ export default function useAnonAuth(): AnonState {
         () => ({ isLoading: false as const, error: undefined }),
         (error) => ({
           isLoading: false as const,
-          error: { message: error?.message || "Unknown error" },
+          error: { message: error?.body?.message || "Unknown error" },
         })
       )
       .then((state: InitState) => {
@@ -60,11 +60,11 @@ export default function useAnonAuth(): AnonState {
   return { isLoading: false, error: undefined, user: authState.user! };
 }
 
-async function createAnonUser(): Promise<{ refresh_token: string }> {
+async function createAnonUser(): Promise<string> {
   const res = await fetch("/api/create-user", { method: "POST" });
   const json = await res.json();
   if (!res.ok) {
     return Promise.reject(json);
   }
-  return json;
+  return json.token;
 }

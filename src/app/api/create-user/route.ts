@@ -26,5 +26,5 @@ export async function POST() {
       .link({ owner: user.id })
   );
 
-  return Response.json({ user });
+  return Response.json({ user, token });
 }

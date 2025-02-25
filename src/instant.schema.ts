@@ -10,17 +10,25 @@ const _schema = i.schema({
       email: i.string().unique().indexed(),
     }),
     profiles: i.entity({
-      handle: i.string().unique(),
       fullName: i.string(),
+      handle: i.string().unique(),
     }),
   },
   links: {
-    profileOwner: {
-      forward: { on: "profiles", has: "one", label: "owner" },
-      reverse: { on: "$users", has: "one", label: "profile" },
+    profilesOwner: {
+      forward: {
+        on: "profiles",
+        has: "one",
+        label: "owner",
+        onDelete: "cascade",
+      },
+      reverse: {
+        on: "$users",
+        has: "one",
+        label: "profile",
+      },
     },
   },
-  rooms: {},
 });
 
 // This helps Typescript display nicer intellisense
