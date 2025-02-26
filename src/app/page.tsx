@@ -83,6 +83,7 @@ export default function App() {
       {/* Profile Header */}
       <div className="flex items-center space-x-4">
         <FileButton
+          accept="image/*"
           render={(isLoading) => {
             return (
               <div className={isLoading ? "opacity-50" : ""}>
