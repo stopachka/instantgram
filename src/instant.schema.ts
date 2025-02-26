@@ -13,6 +13,9 @@ const _schema = i.schema({
       fullName: i.string(),
       handle: i.string().unique(),
     }),
+    posts: i.entity({
+      content: i.string().optional(),
+    }),
   },
   links: {
     profilesOwner: {
@@ -40,6 +43,23 @@ const _schema = i.schema({
         label: "profile",
         onDelete: "cascade",
       },
+    },
+    postAuthor: {
+      forward: {
+        on: "posts",
+        has: "one",
+        label: "author",
+        onDelete: "cascade",
+      },
+      reverse: {
+        on: "profiles",
+        has: "many",
+        label: "authoredPosts",
+      },
+    },
+    postPhoto: {
+      forward: { on: "posts", has: "one", label: "photo" },
+      reverse: { on: "$files", has: "one", label: "post", onDelete: "cascade" },
     },
   },
 });

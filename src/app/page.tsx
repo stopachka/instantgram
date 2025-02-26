@@ -3,7 +3,8 @@
 import clientDB from "@/clientDB";
 import useAnonAuth from "@/useAnonAuth";
 import { HeartIcon } from "@heroicons/react/24/outline";
-import { PlusIcon } from "@heroicons/react/24/solid";
+import { PlusIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { id } from "@instantdb/react";
 import React, { useRef, useState } from "react";
 
 export default function App() {
@@ -16,6 +17,9 @@ export default function App() {
               where: { owner: auth.user.id },
             },
             photo: {},
+            authoredPosts: {
+              photo: {},
+            },
           },
         }
       : null
@@ -33,9 +37,38 @@ export default function App() {
       {/* Company Header */}
       <div className="border-b flex justify-between py-2 sticky top-0 bg-white">
         <img src="/img/text-logo.svg" />
-        <button className="bg-black rounded-xl w-10 h-10 flex items-center justify-center">
-          <PlusIcon className="w-8 h-8 text-white" />
-        </button>
+        <FileButton
+          render={(isLoading) => {
+            return (
+              <div className={isLoading ? "opacity-50" : ""}>
+                <div className="bg-black rounded-xl w-10 h-10 flex items-center justify-center">
+                  <PlusIcon className="w-8 h-8 text-white" />
+                </div>
+              </div>
+            );
+          }}
+          upload={async (file: File) => {
+            const postId = id();
+            const ret = await clientDB.storage.uploadFile(
+              `/postPhotos/${auth.user.id}/${postId}`,
+              file,
+              {
+                contentType: file.type,
+                contentDisposition: `inline; filename="${file.name}"}`,
+              }
+            );
+            await clientDB.transact(
+              clientDB.tx.posts[postId]
+                .update({
+                  content: "Hey there!",
+                })
+                .link({
+                  photo: ret.data.id,
+                  author: profile.id,
+                })
+            );
+          }}
+        />
       </div>
       {/* Profile Header */}
       <div className="flex items-center space-x-4">
@@ -43,14 +76,14 @@ export default function App() {
           render={(isLoading) => {
             return (
               <div className={isLoading ? "opacity-50" : ""}>
-                <div className="max-w-32 h-32 min-w-32 rounded-full">
+                <div className="max-w-32 min-w-32 h-32">
                   {profile.photo ? (
                     <img
                       src={profile.photo.url}
                       className="object-cover h-full w-full rounded-full"
                     />
                   ) : (
-                    <div className="bg-gray-200 h-full w-full"></div>
+                    <div className="bg-gray-200 h-full w-full rounded-full"></div>
                   )}
                 </div>
               </div>
@@ -58,7 +91,7 @@ export default function App() {
           }}
           upload={async (file: File) => {
             const ret = await clientDB.storage.uploadFile(
-              `/photos/${auth.user.id}/${file.name}`,
+              `/profilePhotos/${auth.user.id}/${file.name}`,
               file
             );
             await clientDB.transact(
@@ -77,16 +110,38 @@ export default function App() {
       </div>
       {/* Posts Feed */}
       <div className="space-y-4">
-        {[{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }].map((post) => {
-          return (
-            <div key={post.id} className="space-y-2">
-              <div className="h-40 w-full bg-blue-500"></div>
-              <button>
-                <HeartIcon className="h-6 w-6" />
-              </button>
-            </div>
-          );
-        })}
+        {profile.authoredPosts.length === 0 ? (
+          <div className="text-center">
+            No posts yets! Click + and upload something
+          </div>
+        ) : (
+          profile.authoredPosts.map((post) => {
+            return (
+              <div key={post.id} className="space-y-2">
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      clientDB.transact(clientDB.tx.posts[post.id].delete());
+                    }}
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+                <div className="h-40 w-full">
+                  {post.photo ? (
+                    <img
+                      src={post.photo.url}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : null}
+                </div>
+                <button>
+                  <HeartIcon className="h-6 w-6" />
+                </button>
+              </div>
+            );
+          })
+        )}
       </div>
       <div className="text-gray-400 text-center text-sm">
         <p>Open another tab, it's all reactive!</p>
