@@ -94,7 +94,10 @@ export default function App() {
                       className="object-cover h-full w-full rounded-full"
                     />
                   ) : (
-                    <div className="bg-gray-200 h-full w-full rounded-full"></div>
+                    <img
+                      src={`/img/characters/${profile.archetype}.jpg`}
+                      className="object-cover h-full w-full rounded-full"
+                    />
                   )}
                 </div>
               </div>
@@ -126,9 +129,8 @@ export default function App() {
             No posts yets! Click + and upload something
           </div>
         ) : (
-          profile.authoredPosts.map((post) => {
+          profile.authoredPosts.toReversed().map((post) => {
             const isHearted = post.hearters.length > 0;
-
             return (
               <div key={post.id} className="space-y-2">
                 <div className="flex justify-end">
@@ -140,14 +142,9 @@ export default function App() {
                     <XMarkIcon className="h-6 w-6" />
                   </button>
                 </div>
-                <div className="h-40 w-full">
-                  {post.photo ? (
-                    <img
-                      src={post.photo.url}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : null}
-                </div>
+                {post.photo ? (
+                  <img src={post.photo.url} className="w-full" />
+                ) : null}
                 <button
                   onClick={() => {
                     const postChunk = clientDB.tx.posts[post.id];
