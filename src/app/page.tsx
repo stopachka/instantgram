@@ -82,15 +82,19 @@ function ProfilePage({ user }: { user: User }) {
     );
   }
 
+  async function deletePost(post: Post) {
+    await clientDB.transact(clientDB.tx.posts[post.id].delete());
+  }
+
   async function addHeart(post: Post) {
     await clientDB.transact(
-      clientDB.tx.posts[post.id].link({ hearters: user.id })
+      clientDB.tx.posts[post.id].link({ hearters: profile.id })
     );
   }
 
   async function removeHeart(post: Post) {
     await clientDB.transact(
-      clientDB.tx.posts[post.id].unlink({ hearters: user.id })
+      clientDB.tx.posts[post.id].unlink({ hearters: profile.id })
     );
   }
 
@@ -105,7 +109,7 @@ function ProfilePage({ user }: { user: User }) {
         <AddPostButton upload={createNewPost} />
       </div>
       {/* Profile Info */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4 pb-4 border-b">
         <AddProfilePhotoButton
           upload={changeProfilePhoto}
           archetype={profile.archetype}
@@ -124,7 +128,7 @@ function ProfilePage({ user }: { user: User }) {
           <NoPostsCard upload={createNewPost} />
         ) : (
           profile.authoredPosts.toReversed().map((post) => {
-            const isHearted = post.hearters.find(
+            const isHearted = !!post.hearters.find(
               (hearter) => hearter.id === profile.id
             );
             return (
@@ -133,6 +137,7 @@ function ProfilePage({ user }: { user: User }) {
                 isHearted={isHearted}
                 post={post}
                 photo={post.photo}
+                deletePost={deletePost}
                 addHeart={addHeart}
                 removeHeart={removeHeart}
               />
@@ -150,14 +155,13 @@ function ProfilePage({ user }: { user: User }) {
 // Auth
 
 export default function App() {
-  // We made a special hook for this demo.
-  // This creates anonymous users.
+  // This is an example of how you can use
   const auth = useAnonAuth();
   if (auth.isLoading) return;
   if (auth.error) return <ErrorScreen message={auth.error.message} />;
-  if (!auth.user) {
-    return <DeletedUserScreen />;
-  }
+
+  if (!auth.user) return <DeletedUserScreen />;
+
   return <ProfilePage user={auth.user} />;
 }
 
@@ -243,28 +247,26 @@ function NoPostsCard({ upload }: { upload: (file: File) => Promise<void> }) {
 function PostCard({
   post,
   photo,
+  deletePost,
   addHeart,
   removeHeart,
   isHearted,
 }: {
   addHeart: (post: Post) => Promise<void>;
+  deletePost: (post: Post) => Promise<void>;
   removeHeart: (post: Post) => Promise<void>;
   isHearted: boolean;
   post: Post;
   photo?: InstantFile;
 }) {
   return (
-    <div key={post.id} className="space-y-2 py-4">
+    <div key={post.id} className="space-y-2 p-4">
       <div className="flex justify-end">
-        <button
-          onClick={() => {
-            clientDB.transact(clientDB.tx.posts[post.id].delete());
-          }}
-        >
+        <button onClick={() => deletePost(post)}>
           <XMarkIcon className="h-6 w-6" />
         </button>
       </div>
-      {photo ? <img src={photo.url} className="w-full border" /> : null}
+      {photo ? <img src={photo.url} className="w-full" /> : null}
       <button
         onClick={() => {
           if (isHearted) {
@@ -350,8 +352,8 @@ function DeletedUserScreen() {
       <p>
         Looks like we deleted your guest aaccount.{" "}
         <button
-          onClick={() => {
-            clientDB.auth.signOut();
+          onClick={async () => {
+            await clientDB.auth.signOut();
             window.location.reload();
           }}
           className="text-blue-500"
