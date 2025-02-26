@@ -23,7 +23,7 @@ const rules = {
   $files: {
     allow: {
       // You can do anything to your own files
-      "*": "data.path.startsWith(auth.id + '/')",
+      create: "data.path.startsWith('/')",
     },
   },
 };

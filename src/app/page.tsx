@@ -351,7 +351,7 @@ function DeletedUserScreen() {
     <div className="flex items-center justify-center min-h-dvh flex-col space-y-4 p-4">
       <h2 className="text-2xl font-bold">⏰ We deleted your guest account.</h2>
       <p>
-        Looks like we deleted your guest aaccount.{" "}
+        Looks like we deleted your guest account.{" "}
         <button
           onClick={async () => {
             await clientDB.auth.signOut();
