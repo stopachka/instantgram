@@ -41,6 +41,27 @@ export default function App() {
   } = query;
   const profile = profiles[0];
   if (!profile) return <NotFound />;
+  const handleNewPost = async (file: File) => {
+    const postId = id();
+    const ret = await clientDB.storage.uploadFile(
+      `/postPhotos/${auth.user.id}/${postId}`,
+      file,
+      {
+        contentType: file.type,
+        contentDisposition: `inline; filename="${file.name}"}`,
+      }
+    );
+    await clientDB.transact(
+      clientDB.tx.posts[postId]
+        .update({
+          content: "Hey there!",
+        })
+        .link({
+          photo: ret.data.id,
+          author: profile.id,
+        })
+    );
+  };
   return (
     <div className="max-w-prose mx-auto p-4 space-y-4 relative">
       {/* Company Header */}
@@ -57,27 +78,7 @@ export default function App() {
               </div>
             );
           }}
-          upload={async (file: File) => {
-            const postId = id();
-            const ret = await clientDB.storage.uploadFile(
-              `/postPhotos/${auth.user.id}/${postId}`,
-              file,
-              {
-                contentType: file.type,
-                contentDisposition: `inline; filename="${file.name}"}`,
-              }
-            );
-            await clientDB.transact(
-              clientDB.tx.posts[postId]
-                .update({
-                  content: "Hey there!",
-                })
-                .link({
-                  photo: ret.data.id,
-                  author: profile.id,
-                })
-            );
-          }}
+          upload={handleNewPost}
         />
       </div>
       {/* Profile Header */}
@@ -125,9 +126,23 @@ export default function App() {
       {/* Posts Feed */}
       <div className="space-y-4">
         {profile.authoredPosts.length === 0 ? (
-          <div className="text-center">
-            No posts yets! Click + and upload something
-          </div>
+          <FileButton
+            accept="image/*"
+            render={(isLoading) => {
+              return (
+                <div className={isLoading ? "opacity-50" : ""}>
+                  <div className="text-center relative">
+                    <img src="/img/no_posts.jpg" className="blur" />
+                    <div className="absolute inset-0 flex items-center justify-center flex-col text-white">
+                      <h2 className="text-2xl font-bold">No posts yets!</h2>
+                      <h2>Click here and upload something!</h2>
+                    </div>
+                  </div>
+                </div>
+              );
+            }}
+            upload={handleNewPost}
+          />
         ) : (
           profile.authoredPosts.toReversed().map((post) => {
             const isHearted = post.hearters.length > 0;
@@ -166,8 +181,8 @@ export default function App() {
           })
         )}
       </div>
-      <div className="text-gray-400 text-center text-sm">
-        <p>Open another tab, it's all reactive!</p>
+      <div className="text-gray-400 text-center text-sm space-y-2">
+        <p>Open this page in another tab, it's all reactive!</p>
         <p>
           Curious about the code? Check it out{" "}
           <a
