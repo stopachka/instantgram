@@ -155,7 +155,8 @@ function ProfilePage({ user }: { user: User }) {
 // Auth
 
 export default function App() {
-  // This is an example of how you can use
+  // Normally you'd use `clientDB.useAuth` directly.
+  // For our demo, we wrote a custom hook to create anonymous users.
   const auth = useAnonAuth();
   if (auth.isLoading) return;
   if (auth.error) return <ErrorScreen message={auth.error.message} />;
