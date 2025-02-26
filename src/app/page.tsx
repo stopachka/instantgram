@@ -124,7 +124,7 @@ export default function App() {
         </div>
       </div>
       {/* Posts Feed */}
-      <div className="space-y-4">
+      <div className="divide-y">
         {profile.authoredPosts.length === 0 ? (
           <FileButton
             accept="image/*"
@@ -147,7 +147,7 @@ export default function App() {
           profile.authoredPosts.toReversed().map((post) => {
             const isHearted = post.hearters.length > 0;
             return (
-              <div key={post.id} className="space-y-2">
+              <div key={post.id} className="space-y-2 py-4">
                 <div className="flex justify-end">
                   <button
                     onClick={() => {
@@ -158,7 +158,7 @@ export default function App() {
                   </button>
                 </div>
                 {post.photo ? (
-                  <img src={post.photo.url} className="w-full" />
+                  <img src={post.photo.url} className="w-full border" />
                 ) : null}
                 <button
                   onClick={() => {
@@ -240,7 +240,18 @@ function FileButton({
 }
 
 function NotFound() {
-  return <div>Not found!</div>;
+  return (
+    <div className="flex items-center justify-center min-h-dvh flex-col space-y-4 p-4">
+      <h2 className="text-2xl font-bold">🤕 Ohp.</h2>
+      <p>
+        We deleted your account.{" "}
+        <a href="/" className="text-blue-500">
+          Refresh
+        </a>{" "}
+        this page, and we'll create a new account for you
+      </p>
+    </div>
+  );
 }
 
 function ErrorScreen({ error }: { error: { message: string } }) {
