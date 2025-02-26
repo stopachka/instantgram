@@ -47,7 +47,7 @@ function ProfilePage({ user }: { user: User }) {
   async function changeProfilePhoto(file: File) {
     // 1. Upload the file!
     const uploaded = await clientDB.storage.uploadFile(
-      `/profilePhotos/${user.id}/${file.name}`,
+      `/${user.id}/profilePhotos/${file.name}`,
       file
     );
     // 2. Link it to our profile!
@@ -62,7 +62,7 @@ function ProfilePage({ user }: { user: User }) {
     const postId = id();
     // 1. Upload the file!
     const uploaded = await clientDB.storage.uploadFile(
-      `/postPhotos/${user.id}/${postId}`,
+      `/${user.id}/postPhotos/${postId}`,
       file,
       {
         contentType: file.type,

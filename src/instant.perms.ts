@@ -1,13 +1,31 @@
-import type { InstantRules } from "@instantdb/react";
-
 const rules = {
-  $files: {
+  $users: {
     allow: {
-      view: "true",
-      create: "true",
-      delete: "true",
+      // Users can see their own data
+      view: "auth.id == data.id",
+      "*": "false",
     },
   },
-} satisfies InstantRules;
+  profiles: {
+    allow: {
+      // You can only see and change your profile
+      "*": "auth.id == data.ref('owner.$user.id')",
+      // But you can't delete it
+      delete: "false",
+    },
+  },
+  posts: {
+    allow: {
+      // You can see and change your own posts
+      "*": "auth.id in data.ref('author.$user.id')",
+    },
+  },
+  $files: {
+    allow: {
+      // You can do anything to your own files
+      "*": "data.path.startsWith(auth.id + '/')",
+    },
+  },
+};
 
 export default rules;
