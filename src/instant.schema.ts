@@ -61,6 +61,10 @@ const _schema = i.schema({
       forward: { on: "posts", has: "one", label: "photo" },
       reverse: { on: "$files", has: "one", label: "post", onDelete: "cascade" },
     },
+    postHearters: {
+      forward: { on: "posts", has: "many", label: "hearters" },
+      reverse: { on: "$users", has: "many", label: "heartedPosts" },
+    },
   },
 });
 

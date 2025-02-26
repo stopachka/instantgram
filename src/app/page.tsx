@@ -2,8 +2,12 @@
 
 import clientDB from "@/clientDB";
 import useAnonAuth from "@/useAnonAuth";
-import { HeartIcon } from "@heroicons/react/24/outline";
-import { PlusIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { HeartIcon as HeartIconOutline } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  XMarkIcon,
+  HeartIcon as HeartIconSolid,
+} from "@heroicons/react/24/solid";
 import { id } from "@instantdb/react";
 import React, { useRef, useState } from "react";
 
@@ -19,6 +23,11 @@ export default function App() {
             photo: {},
             authoredPosts: {
               photo: {},
+              hearters: {
+                $: {
+                  where: { id: auth.user.id },
+                },
+              },
             },
           },
         }
@@ -116,6 +125,8 @@ export default function App() {
           </div>
         ) : (
           profile.authoredPosts.map((post) => {
+            const isHearted = post.hearters.length > 0;
+
             return (
               <div key={post.id} className="space-y-2">
                 <div className="flex justify-end">
@@ -135,8 +146,21 @@ export default function App() {
                     />
                   ) : null}
                 </div>
-                <button>
-                  <HeartIcon className="h-6 w-6" />
+                <button
+                  onClick={() => {
+                    const postChunk = clientDB.tx.posts[post.id];
+                    clientDB.transact(
+                      isHearted
+                        ? postChunk.unlink({ hearters: auth.user.id })
+                        : postChunk.link({ hearters: auth.user.id })
+                    );
+                  }}
+                >
+                  {isHearted ? (
+                    <HeartIconSolid className="h-6 w-6 text-red-500" />
+                  ) : (
+                    <HeartIconOutline className="h-6 w-6" />
+                  )}
                 </button>
               </div>
             );
