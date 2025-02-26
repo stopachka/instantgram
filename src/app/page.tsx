@@ -1,6 +1,7 @@
 "use client";
 
 import clientDB from "@/clientDB";
+import { InstantFile, Post, ProfileArchetype } from "@/instant.schema";
 import useAnonAuth from "@/useAnonAuth";
 import { HeartIcon as HeartIconOutline } from "@heroicons/react/24/outline";
 import {
@@ -8,113 +9,107 @@ import {
   XMarkIcon,
   HeartIcon as HeartIconSolid,
 } from "@heroicons/react/24/solid";
-import { id } from "@instantdb/react";
+import { id, User } from "@instantdb/react";
 import React, { useRef, useState } from "react";
 
-export default function App() {
-  const auth = useAnonAuth();
-  const query = clientDB.useQuery(
-    auth.user
-      ? {
-          profiles: {
-            $: {
-              where: { owner: auth.user.id },
-            },
-            photo: {},
-            authoredPosts: {
-              photo: {},
-              hearters: {
-                $: {
-                  where: { id: auth.user.id },
-                },
-              },
-            },
-          },
-        }
-      : null
-  );
-  if (auth.isLoading || query.isLoading) return;
-  const error = auth.error || query.error;
-  if (error) return <ErrorScreen error={error} />;
-  const {
-    data: { profiles },
-  } = query;
-  const profile = profiles[0];
-  if (!profile) return <NotFound />;
-  const handleNewPost = async (file: File) => {
+function ProfilePage({ user }: { user: User }) {
+  // --------
+  // Queries
+
+  const { isLoading, error, data } = clientDB.useQuery({
+    profiles: {
+      $: {
+        // My profile
+        where: { owner: user.id },
+      },
+      // with it's profile photo.
+      photo: {},
+      // and all my authored posts
+      authoredPosts: {
+        // alongside the post's photo
+        photo: {},
+        // and profiles whoves hearted my posts!
+        hearters: {},
+      },
+    },
+  });
+
+  if (isLoading) return;
+  if (error) return <ErrorScreen message={error.message} />;
+
+  const profile = data.profiles[0];
+
+  if (!profile) return <DeletedUserScreen />;
+
+  // --------
+  // Transactions
+
+  async function changeProfilePhoto(file: File) {
+    // 1. Upload the file!
+    const uploaded = await clientDB.storage.uploadFile(
+      `/profilePhotos/${user.id}/${file.name}`,
+      file
+    );
+    // 2. Link it to our profile!
+    await clientDB.transact(
+      clientDB.tx.profiles[profile.id].link({
+        photo: uploaded.data.id,
+      })
+    );
+  }
+
+  async function createNewPost(file: File) {
     const postId = id();
-    const ret = await clientDB.storage.uploadFile(
-      `/postPhotos/${auth.user.id}/${postId}`,
+    // 1. Upload the file!
+    const uploaded = await clientDB.storage.uploadFile(
+      `/postPhotos/${user.id}/${postId}`,
       file,
       {
         contentType: file.type,
         contentDisposition: `inline; filename="${file.name}"}`,
       }
     );
+    // 2. Create a post, and _link_ our file!
     await clientDB.transact(
       clientDB.tx.posts[postId]
         .update({
           content: "Hey there!",
         })
         .link({
-          photo: ret.data.id,
+          photo: uploaded.data.id,
           author: profile.id,
         })
     );
-  };
+  }
+
+  async function addHeart(post: Post) {
+    await clientDB.transact(
+      clientDB.tx.posts[post.id].link({ hearters: user.id })
+    );
+  }
+
+  async function removeHeart(post: Post) {
+    await clientDB.transact(
+      clientDB.tx.posts[post.id].unlink({ hearters: user.id })
+    );
+  }
+
+  // --------------
+  // Time to render!
+
   return (
     <div className="max-w-prose mx-auto p-4 space-y-4 relative">
-      {/* Company Header */}
+      {/* Instantgram Header */}
       <div className="border-b flex justify-between py-2 sticky top-0 bg-white">
-        <img src="/img/text-logo.svg" />
-        <FileButton
-          accept="image/*"
-          render={(isLoading) => {
-            return (
-              <div className={isLoading ? "opacity-50" : ""}>
-                <div className="bg-black rounded-xl w-10 h-10 flex items-center justify-center">
-                  <PlusIcon className="w-8 h-8 text-white" />
-                </div>
-              </div>
-            );
-          }}
-          upload={handleNewPost}
-        />
+        <Logo />
+        <AddPostButton upload={createNewPost} />
       </div>
-      {/* Profile Header */}
+      {/* Profile Info */}
       <div className="flex items-center space-x-4">
-        <FileButton
-          accept="image/*"
-          render={(isLoading) => {
-            return (
-              <div className={isLoading ? "opacity-50" : ""}>
-                <div className="max-w-32 min-w-32 h-32">
-                  {profile.photo ? (
-                    <img
-                      src={profile.photo.url}
-                      className="object-cover h-full w-full rounded-full"
-                    />
-                  ) : (
-                    <img
-                      src={`/img/characters/${profile.archetype}.jpg`}
-                      className="object-cover h-full w-full rounded-full"
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          }}
-          upload={async (file: File) => {
-            const ret = await clientDB.storage.uploadFile(
-              `/profilePhotos/${auth.user.id}/${file.name}`,
-              file
-            );
-            await clientDB.transact(
-              clientDB.tx.profiles[profile.id].link({
-                photo: ret.data.id,
-              })
-            );
-          }}
+        <AddProfilePhotoButton
+          upload={changeProfilePhoto}
+          archetype={profile.archetype}
+          photo={profile.photo}
         />
         <div className="space-y-1 overflow-hidden">
           <h3 className="text-2xl truncate">{profile.fullName}</h3>
@@ -126,74 +121,183 @@ export default function App() {
       {/* Posts Feed */}
       <div className="divide-y">
         {profile.authoredPosts.length === 0 ? (
-          <FileButton
-            accept="image/*"
-            render={(isLoading) => {
-              return (
-                <div className={isLoading ? "opacity-50" : ""}>
-                  <div className="text-center relative">
-                    <img src="/img/no_posts.jpg" className="blur" />
-                    <div className="absolute inset-0 flex items-center justify-center flex-col text-white">
-                      <h2 className="text-2xl font-bold">No posts yets!</h2>
-                      <h2>Click here and upload something!</h2>
-                    </div>
-                  </div>
-                </div>
-              );
-            }}
-            upload={handleNewPost}
-          />
+          <NoPostsCard upload={createNewPost} />
         ) : (
           profile.authoredPosts.toReversed().map((post) => {
-            const isHearted = post.hearters.length > 0;
+            const isHearted = post.hearters.find(
+              (hearter) => hearter.id === profile.id
+            );
             return (
-              <div key={post.id} className="space-y-2 py-4">
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => {
-                      clientDB.transact(clientDB.tx.posts[post.id].delete());
-                    }}
-                  >
-                    <XMarkIcon className="h-6 w-6" />
-                  </button>
-                </div>
-                {post.photo ? (
-                  <img src={post.photo.url} className="w-full border" />
-                ) : null}
-                <button
-                  onClick={() => {
-                    const postChunk = clientDB.tx.posts[post.id];
-                    clientDB.transact(
-                      isHearted
-                        ? postChunk.unlink({ hearters: auth.user.id })
-                        : postChunk.link({ hearters: auth.user.id })
-                    );
-                  }}
-                >
-                  {isHearted ? (
-                    <HeartIconSolid className="h-6 w-6 text-red-500" />
-                  ) : (
-                    <HeartIconOutline className="h-6 w-6" />
-                  )}
-                </button>
-              </div>
+              <PostCard
+                key={post.id}
+                isHearted={isHearted}
+                post={post}
+                photo={post.photo}
+                addHeart={addHeart}
+                removeHeart={removeHeart}
+              />
             );
           })
         )}
       </div>
-      <div className="text-gray-400 text-center text-sm space-y-2">
-        <p>Open this page in another tab, it's all reactive!</p>
-        <p>
-          Curious about the code? Check it out{" "}
-          <a
-            className="underline text-blue-700"
-            target="_blank"
-            href="https://github.com/stopachka/instantgram"
-          >
-            here
-          </a>
-        </p>
+      {/* Footer */}
+      <Footer />
+    </div>
+  );
+}
+
+// -----------
+// Auth
+
+export default function App() {
+  // We made a special hook for this demo.
+  // This creates anonymous users.
+  const auth = useAnonAuth();
+  if (auth.isLoading) return;
+  if (auth.error) return <ErrorScreen message={auth.error.message} />;
+  if (!auth.user) {
+    return <DeletedUserScreen />;
+  }
+  return <ProfilePage user={auth.user} />;
+}
+
+// -----------
+// Components
+
+function Logo() {
+  return <img src="/img/text-logo.svg" />;
+}
+
+function AddPostButton({ upload }: { upload: (file: File) => Promise<void> }) {
+  return (
+    <FileButton
+      accept="image/*"
+      render={(isLoading) => {
+        return (
+          <div className={isLoading ? "opacity-50" : ""}>
+            <div className="bg-black rounded-xl w-10 h-10 flex items-center justify-center">
+              <PlusIcon className="w-8 h-8 text-white" />
+            </div>
+          </div>
+        );
+      }}
+      upload={upload}
+    />
+  );
+}
+
+function AddProfilePhotoButton(props: {
+  upload: (file: File) => Promise<void>;
+  archetype: ProfileArchetype;
+  photo?: InstantFile;
+}) {
+  return (
+    <FileButton
+      accept="image/*"
+      render={(isLoading) => {
+        return (
+          <div className={isLoading ? "opacity-50" : ""}>
+            <div className="max-w-32 min-w-32 h-32">
+              {props.photo ? (
+                <img
+                  src={props.photo.url}
+                  className="object-cover h-full w-full rounded-full"
+                />
+              ) : (
+                <img
+                  src={`/img/characters/${props.archetype}.jpg`}
+                  className="object-cover h-full w-full rounded-full"
+                />
+              )}
+            </div>
+          </div>
+        );
+      }}
+      upload={props.upload}
+    />
+  );
+}
+
+function NoPostsCard({ upload }: { upload: (file: File) => Promise<void> }) {
+  return (
+    <FileButton
+      accept="image/*"
+      render={(isLoading) => {
+        return (
+          <div className={isLoading ? "opacity-50" : ""}>
+            <div className="text-center relative">
+              <img src="/img/no_posts.jpg" className="blur" />
+              <div className="absolute inset-0 flex items-center justify-center flex-col text-white">
+                <h2 className="text-2xl font-bold">No posts yets!</h2>
+                <h2>Click here and upload something!</h2>
+              </div>
+            </div>
+          </div>
+        );
+      }}
+      upload={upload}
+    />
+  );
+}
+
+function PostCard({
+  post,
+  photo,
+  addHeart,
+  removeHeart,
+  isHearted,
+}: {
+  addHeart: (post: Post) => Promise<void>;
+  removeHeart: (post: Post) => Promise<void>;
+  isHearted: boolean;
+  post: Post;
+  photo?: InstantFile;
+}) {
+  return (
+    <div key={post.id} className="space-y-2 py-4">
+      <div className="flex justify-end">
+        <button
+          onClick={() => {
+            clientDB.transact(clientDB.tx.posts[post.id].delete());
+          }}
+        >
+          <XMarkIcon className="h-6 w-6" />
+        </button>
       </div>
+      {photo ? <img src={photo.url} className="w-full border" /> : null}
+      <button
+        onClick={() => {
+          if (isHearted) {
+            removeHeart(post);
+          } else {
+            addHeart(post);
+          }
+        }}
+      >
+        {isHearted ? (
+          <HeartIconSolid className="h-6 w-6 text-red-500" />
+        ) : (
+          <HeartIconOutline className="h-6 w-6" />
+        )}
+      </button>
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <div className="text-gray-400 text-center text-sm space-y-2">
+      <p>Open this page in another tab, it's all reactive!</p>
+      <p>
+        Curious about the code? Check it out{" "}
+        <a
+          className="underline text-blue-700"
+          target="_blank"
+          href="https://github.com/stopachka/instantgram"
+        >
+          here
+        </a>
+      </p>
     </div>
   );
 }
@@ -239,21 +343,33 @@ function FileButton({
   );
 }
 
-function NotFound() {
+function DeletedUserScreen() {
   return (
     <div className="flex items-center justify-center min-h-dvh flex-col space-y-4 p-4">
-      <h2 className="text-2xl font-bold">🤕 Ohp.</h2>
+      <h2 className="text-2xl font-bold">⏰ We deleted your guest account.</h2>
       <p>
-        We deleted your account.{" "}
-        <a href="/" className="text-blue-500">
-          Refresh
-        </a>{" "}
-        this page, and we'll create a new account for you
+        Looks like we deleted your guest aaccount.{" "}
+        <button
+          onClick={() => {
+            clientDB.auth.signOut();
+            window.location.reload();
+          }}
+          className="text-blue-500"
+        >
+          Click here
+        </button>{" "}
+        and we'll create another account for you :)
       </p>
     </div>
   );
 }
 
-function ErrorScreen({ error }: { error: { message: string } }) {
-  return <div>{error.message}</div>;
+function ErrorScreen({ message }: { message?: string }) {
+  return (
+    <div className="flex items-center justify-center min-h-dvh flex-col space-y-4 p-4">
+      <h2 className="text-2xl font-bold">🤕 Ohp.</h2>
+      <p>We got an error.</p>
+      {message ? <pre>{message}</pre> : null}
+    </div>
+  );
 }

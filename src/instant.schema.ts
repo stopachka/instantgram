@@ -1,4 +1,4 @@
-import { i } from "@instantdb/react";
+import { i, InstaQLEntity } from "@instantdb/react";
 
 export type ProfileArchetype =
   | "alyssa"
@@ -73,7 +73,7 @@ const _schema = i.schema({
     },
     postHearters: {
       forward: { on: "posts", has: "many", label: "hearters" },
-      reverse: { on: "$users", has: "many", label: "heartedPosts" },
+      reverse: { on: "profiles", has: "many", label: "heartedPosts" },
     },
   },
 });
@@ -83,5 +83,8 @@ type _AppSchema = typeof _schema;
 interface AppSchema extends _AppSchema {}
 const schema: AppSchema = _schema;
 
-export type { AppSchema };
+type InstantFile = InstaQLEntity<AppSchema, "$files">;
+type Post = InstaQLEntity<AppSchema, "posts">;
+
+export type { AppSchema, InstantFile, Post };
 export default schema;
