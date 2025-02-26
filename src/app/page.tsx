@@ -149,6 +149,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     const postChunk = clientDB.tx.posts[post.id];
+
                     clientDB.transact(
                       isHearted
                         ? postChunk.unlink({ hearters: auth.user.id })
