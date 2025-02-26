@@ -47,6 +47,7 @@ export default function App() {
       <div className="border-b flex justify-between py-2 sticky top-0 bg-white">
         <img src="/img/text-logo.svg" />
         <FileButton
+          accept="image/*"
           render={(isLoading) => {
             return (
               <div className={isLoading ? "opacity-50" : ""}>
@@ -149,7 +150,6 @@ export default function App() {
                 <button
                   onClick={() => {
                     const postChunk = clientDB.tx.posts[post.id];
-
                     clientDB.transact(
                       isHearted
                         ? postChunk.unlink({ hearters: auth.user.id })
@@ -186,11 +186,13 @@ export default function App() {
 }
 
 function FileButton({
+  accept,
   render,
   upload,
 }: {
   render: (isLoading: boolean) => React.ReactNode;
   upload: (file: File) => Promise<void>;
+  accept?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -208,6 +210,7 @@ function FileButton({
         ref={inputRef}
         type="file"
         className="hidden"
+        accept={accept}
         onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
