@@ -128,7 +128,7 @@ function ProfilePage({ user }: { user: User }) {
           <NoPostsCard upload={createNewPost} />
         ) : (
           profile.authoredPosts.toReversed().map((post) => {
-            const isHearted = !!post.hearters.find(
+            const isHearted = post.hearters.some(
               (hearter) => hearter.id === profile.id
             );
             return (
