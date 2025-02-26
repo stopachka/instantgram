@@ -1,5 +1,14 @@
 import { i } from "@instantdb/react";
 
+export type ProfileArchetype =
+  | "alyssa"
+  | "ben"
+  | "cy"
+  | "eva"
+  | "lem"
+  | "louis"
+  | "ima";
+
 const _schema = i.schema({
   entities: {
     $files: i.entity({
@@ -12,6 +21,7 @@ const _schema = i.schema({
     profiles: i.entity({
       fullName: i.string(),
       handle: i.string().unique(),
+      archetype: i.string<ProfileArchetype>(),
     }),
     posts: i.entity({
       content: i.string().optional(),
