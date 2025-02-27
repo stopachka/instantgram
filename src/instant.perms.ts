@@ -1,3 +1,5 @@
+import { InstantRules } from "@instantdb/react";
+
 const rules = {
   $users: {
     allow: {
@@ -28,6 +30,6 @@ const rules = {
       $default: "data.path.startsWith('/' + auth.id + '/')",
     },
   },
-};
+} satisfies InstantRules;
 
 export default rules;
