@@ -161,7 +161,10 @@ export default function App() {
   if (auth.isLoading) return;
   if (auth.error) return <ErrorScreen message={auth.error.message} />;
 
-  if (!auth.user) return <DeletedUserScreen />;
+  if (!auth.user) {
+    debugger;
+    return <DeletedUserScreen />;
+  }
 
   return <ProfilePage user={auth.user} />;
 }

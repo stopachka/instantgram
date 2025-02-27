@@ -1,29 +1,31 @@
 const rules = {
   $users: {
     allow: {
+      $default: "false",
       // Users can see their own data
       view: "auth.id == data.id",
-      "*": "false",
     },
   },
   profiles: {
     allow: {
-      // You can only see and change your profile
-      "*": "auth.id == data.ref('owner.$user.id')",
-      // But you can't delete it
+      // You can't delete profiles
       delete: "false",
+      // You don't need to create profiles (we make them through the admin SDK)
+      create: "false",
+      // You can view or change your own profile
+      $default: "auth.id in data.ref('owner.id')",
     },
   },
   posts: {
     allow: {
-      // You can see and change your own posts
-      "*": "auth.id in data.ref('author.$user.id')",
+      // You can do anything to your own posts
+      $default: "auth.id in data.ref('author.owner.id')",
     },
   },
   $files: {
     allow: {
       // You can do anything to your own files
-      create: "data.path.startsWith('/')",
+      $default: "data.path.startsWith('/' + auth.id + '/')",
     },
   },
 };
